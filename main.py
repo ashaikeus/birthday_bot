@@ -57,6 +57,8 @@ def verify_group(message):
     try:
         if table_exists:
             group = group_code
+            msg = ("Successfully joined the group!", "Успешно вошли в группу!")
+            bot.send_message(message.chat.id, msg[lang_ru])
         else:
             raise Exception
     except Exception:
@@ -86,6 +88,7 @@ def verify_name_birthday(message):
         conn.commit()
         cur.close()
         conn.close()
+        bot.send_message(message.chat.id, data_change_success_message[1][lang_ru])
     except Exception:
         bot.send_message(message.chat.id, msg[lang_ru])
         bot.register_next_step_handler(message, verify_name_birthday)
