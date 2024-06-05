@@ -94,19 +94,22 @@ def verify_name_birthday(message):
 
 
 def look_for_birthdays():
+    delay = 10
     while True:
         if group:
             today, tomonth, toyear = datetime.now().day, datetime.now().month, datetime.now().year
-            print(today, tomonth, toyear)
             conn = sqlite3.connect('birthdays.sql')
             cur = conn.cursor()
             cur.execute(f"SELECT name, surname, year FROM {group} WHERE day='{today}' AND month='{tomonth}'")
             birthdays = cur.fetchall()
+            cur.close()
+            conn.close()
             for bday in birthdays:
                 msg = (f"Today is {bday[0]} {bday[1]}'s {toyear - bday[-1]}th birthday!",
                        f"Сегодня {bday[0]} {bday[1]} отмечает {toyear - bday[-1]}летие!")
                 bot.send_message(user_id, msg[lang_ru])
-        sleep(30)  # should be updated every hour, I left this value 30 seconds for practice
+            delay = 86400
+        sleep(delay)
 
 
 # Functions with message handlers that respond to user's commands
@@ -116,6 +119,7 @@ def init(message):
     lang_ru = message.from_user.language_code == 'ru'
     user_id = message.from_user.id
     start(message)
+    manual(message)
     join_or_create(message)
 
 
@@ -203,8 +207,8 @@ def register(message):
     set_name_birthday(message)
 
 
-@bot.message_handler(commands=['help'])
-def help(message):
+@bot.message_handler(commands=['manual'])
+def manual(message):
     msg = ("1. Join a group (/join_group) or create one (/create_group);\
     \n2. Register using /register;\
     \n3. Now you are automatically subscribed to all your group's members' birthdays.\
@@ -213,6 +217,27 @@ def help(message):
     \n2. Введите личные данные через /register;\
     \n3. Теперь вы подписаны на дни рождения всех членов группы.\
     \nВы будете получать уведомления об их днях рождения. Посмотреть весь список: /all_birthdays.",)
+    bot.send_message(message.chat.id, msg[lang_ru])
+
+
+@bot.message_handler(commands=['help'])
+def help(message):
+    msg = ("/start – begin working with the bot\
+           \n/manual - instructions\
+           \n/help – list of commands\
+           \n/register — set your name and birthday\
+           \n/change_language – switch language between English and Russian\
+           \n/join_group – join an existing group\
+           \n/create_group - create a new group and generate a code for it\
+           \n/all_birthdays - birthdays of people in your group in chronological order",
+           "/start – начало взаимодействия с ботом\
+           \n/manual - инструкция\
+           \n/help – список команд\
+           \n/register — указать своё имя и день рождения\
+           \n/change_language – меняет язык интерфейса между русским и английским\
+           \n/join_group – присоединиться к группе\
+           \n/create_group - создать собственную группу\
+           \n/all_birthdays - хронологически отсортированный список дней рождения всех людей вашей группы",)
     bot.send_message(message.chat.id, msg[lang_ru])
 
 
