@@ -2,6 +2,9 @@ import telebot
 import sqlite3
 from random import randint
 from string import ascii_uppercase
+from datetime import datetime
+from time import sleep
+from threading import Thread
 from secrets import TOKEN  # Secrets is a file filled with, well, secrets:
                            # tokens, potentially unsafe info and such!
 
@@ -90,6 +93,22 @@ def verify_name_birthday(message):
         print('verify_name_birthday done')
 
 
+def look_for_birthdays():
+    while True:
+        if group:
+            today, tomonth, toyear = datetime.now().day, datetime.now().month, datetime.now().year
+            print(today, tomonth, toyear)
+            conn = sqlite3.connect('birthdays.sql')
+            cur = conn.cursor()
+            cur.execute(f"SELECT name, surname, year FROM {group} WHERE day='{today}' AND month='{tomonth}'")
+            birthdays = cur.fetchall()
+            for bday in birthdays:
+                msg = (f"Today is {bday[0]} {bday[1]}'s {toyear - bday[-1]}th birthday!",
+                       f"Сегодня {bday[0]} {bday[1]} отмечает {toyear - bday[-1]}летие!")
+                bot.send_message(user_id, msg[lang_ru])
+        sleep(30)  # should be updated every hour, I left this value 30 seconds for practice
+
+
 # Functions with message handlers that respond to user's commands
 @bot.message_handler(commands=['start'])
 def init(message):
@@ -129,7 +148,7 @@ def all_birthdays(message):
     birthdays = cur.fetchall()
     result = '' if len(birthdays) > 0 else msg[lang_ru]
     for i in range(len(birthdays)):
-        result += f"{i}. {birthdays[i][0]} {birthdays[i][1]} - {birthdays[i][2]}.{birthdays[i][3]}.{birthdays[i][4]}\n"
+        result += f"{i + 1}. {birthdays[i][0]} {birthdays[i][1]} - {birthdays[i][2]}.{birthdays[i][3]}.{birthdays[i][4]}\n"
     cur.close()
     conn.close()
     bot.send_message(message.chat.id, result)
@@ -216,4 +235,6 @@ def callback_manager(callback):
 
 # Making the bot run for ever and ever
 if __name__ == '__main__':
+    t = Thread(target=look_for_birthdays)
+    t.start()
     bot.polling(none_stop=True)
